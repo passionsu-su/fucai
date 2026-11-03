@@ -1,13 +1,14 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>福彩选号助手</title>
+<title>彩票选号助手</title>
 <style>
 :root{--r:#e0352b;--b:#1f6fd1;--d:#d48a00;--bg:#f6f4f1;--fg:#222;--mut:#888;--card:#fff}
 *{box-sizing:border-box}body{margin:0;font:15px/1.5 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg)}
 header{position:sticky;top:0;z-index:5;background:#b3121c;color:#fff;padding:12px 16px 0}
 header h1{margin:0;font-size:18px}header p{margin:2px 0 8px;font-size:12px;opacity:.8}
 .tabs{display:flex;gap:4px}.tabs a{flex:1;text-align:center;padding:8px;border-radius:10px 10px 0 0;cursor:pointer;opacity:.75}
+#games{display:flex;gap:6px;overflow-x:auto;padding:10px 12px 0;max-width:760px;margin:0 auto}#games a{flex:1;min-width:84px;text-align:center;background:#fff;border:1px solid #e5e0da;border-radius:12px;padding:6px 4px;cursor:pointer;font-weight:600}#games a small{display:block;font-size:11px;font-weight:400;color:var(--mut)}#games a.on{background:#b3121c;color:#fff;border-color:#b3121c}#games a.on small{color:#fde}
 .tabs a.on{background:var(--bg);color:#b3121c;font-weight:700;opacity:1}
 main{max-width:760px;margin:0 auto;padding:12px}
 .card{background:var(--card);border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
@@ -33,8 +34,9 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:6px 4px;b
 .bt{color:var(--b)}.dl{margin-left:auto;font-size:12px;color:var(--b);font-weight:400}
 footer{text-align:center;color:var(--mut);font-size:12px;padding:8px 16px 30px}
 </style></head><body>
-<header><h1>福彩选号助手</h1><p id="upd">加载中…</p>
-<nav class="tabs"><a data-t="ssq" class="on">双色球 · 奖池最高</a><a data-t="d3">福彩3D · 中奖率最高</a></nav></header>
+<header><h1>彩票选号助手</h1><p id="upd">加载中…</p>
+<nav class="tabs orgs"><a data-o="福彩" class="on">福利彩票</a><a data-o="体彩">体育彩票</a></nav></header>
+<nav id="games"></nav>
 <main id="main"><p class="card">加载开奖数据…</p></main>
-<footer>彩票每一注的中奖概率完全相同，历史走势、冷热号都不能预测下一期。本页仅供娱乐参考，请理性购彩，量力而行，未满 18 周岁不得购彩。<br>数据来源：500彩票网开奖历史，每天开奖后由 GitHub Actions 自动更新。</footer>
+<footer>彩票每一注的中奖概率完全相同，历史走势、冷热号都不能预测下一期。本页仅供娱乐参考，请理性购彩，量力而行，未满 18 周岁不得购彩。<br>数据来源：500彩票网开奖历史（福彩：双色球、福彩3D、七乐彩；体彩：大乐透、排列3、排列5、七星彩），每天开奖后由 GitHub Actions 自动更新。</footer>
 <script src="app.js"></script></body></html>
