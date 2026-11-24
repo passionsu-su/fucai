@@ -122,7 +122,7 @@
   const ball = (n, c, sm) => `<span class="ball ${c}${sm ? ' sm' : ''}">${c === 'd' ? n : p2(n)}</span>`;
   const modeName = { mix: '冷热搭配', hot: '近期热号', cold: '长期遗漏', rand: '纯随机' };
   const kindName = { zx: '直选', z6: '组选六' };
-  const cache = {};
+  const cache = {}, predCache = {};
   let org = '福彩', gid = 'ssq', win = 100;
   const todayCN = () => new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
   function nextDraw(g) {
@@ -154,12 +154,34 @@
       <div class="note">${drawDays(g)} ${g.time} 开奖｜下期：${nextDraw(g)}｜2 元一注${g.type === 'lotto' && last.pool != null ? '｜' + g.facts.map(f => f.join(' ')).join('，') : ''}</div></section>`;
   }
 
+  const pc = (x, d) => x == null ? '—' : (x * 100).toFixed(x && x < 0.001 ? 3 : d) + '%';
+  function predCard(g, P) {
+    if (!P) return '';
+    const th = P.theory, L = P.liveStats, B = P.backtestStats;
+    const line = (nm, S) => S.draws ? `<tr><td>${nm}</td><td>${S.draws} 期 / ${S.tickets} 注</td><td>${S.winRate == null ? '—' : `<b>${pc(S.winRate, 2)}</b>`}</td><td>${S.avgHits.toFixed(2)}</td></tr>`
+      : `<tr><td>${nm}</td><td colspan="3">暂无已开奖记录，下一期开奖后开始统计</td></tr>`;
+    const rows = P.live.filter(e => e.result).reverse().map(e => ({ ...e, src: '实盘' }))
+      .concat(P.backtest.slice().reverse().map(e => ({ ...e, src: '回测' }))).slice(0, 12);
+    const fmtRes = e => g.type === 'lotto' ? e.result.a.map(p2).join(' ') + (e.result.b ? ` <b class="bt">${e.result.b.map(p2).join(' ')}</b>` : '') : e.result.a.join(' ');
+    const fmtHits = e => e.hits.map(h => `<span class="hit${h.win ? ' win' : ''}">${h.label}</span>`).join('');
+    const unit = g.type === 'lotto' ? '几个号' : '几个位置（对位）';
+    return `<section class="card"><h2>预测战绩 <small>每期 5 注，开奖后自动对比</small></h2>
+      <table><tr><th></th><th>样本</th><th>中奖率</th><th>平均命中</th></tr>
+      ${line('实盘', L)}${line('回测', B)}
+      <tr class="exp"><td>纯随机</td><td>理论期望</td><td>${pc(th.win, 2)}</td><td>${th.avg.toFixed(2)}</td></tr></table>
+      <div class="note">中奖率 = 达到最低奖级的注数 ÷ 总注数${g.id === 'qxc' ? '（七星彩奖级按位置复杂，这里只统计对位命中）' : ''}；平均命中 = 每注平均猜中${unit}。实盘号码在开奖前提交到仓库，可在 Git 历史查证；回测用每期开奖前的数据按同一算法补算。和"纯随机"接近说明没有预测能力，这是正常的。</div>
+      <div class="k">最近对比（绿色 = 中奖）</div>
+      <table class="cmp"><tr><th>期号</th><th>开奖号码</th><th>5 注命中</th></tr>
+      ${rows.map(e => `<tr><td>${e.issue.slice(-5)}<br><small>${e.src}</small></td><td>${fmtRes(e)}</td><td>${fmtHits(e)}</td></tr>`).join('')}</table></section>`;
+  }
+
   function render() {
     document.querySelectorAll('.orgs a').forEach(a => a.classList.toggle('on', a.dataset.o === org));
     $('#games').innerHTML = GAMES.filter(g => g.org === org).map(g => `<a data-g="${g.id}" class="${g.id === gid ? 'on' : ''}">${g.name}${g.tag ? `<small>${g.tag}</small>` : ''}</a>`).join('');
     document.querySelectorAll('#games a').forEach(a => a.onclick = () => { gid = a.dataset.g; win = 100; load(); });
     const g = GAMES.find(x => x.id === gid), all = cache[gid], data = scoped(g, all), last = all[all.length - 1];
-    const picks = todayPicks(g, all, todayCN());
+    const pred = predCache[gid], pend = pred && pred.live.find(e => !e.result && e.after === last.issue);
+    const picks = pend ? pend.picks : todayPicks(g, all, '#' + last.issue);
     let rule, stats;
     if (g.type === 'lotto') {
       const st = lottoStats(g, data, win), N = g.A[0], maxA = Math.max(...st.a.slice(1));
@@ -179,9 +201,10 @@
       ? `<tr><td>${x.issue.slice(2)}<br><small>${x.date.slice(5)}</small></td><td>${x.a.map(p2).join(' ')} <b class="bt">${(x.b || []).map(p2).join(' ')}</b></td><td>${x.pool != null ? yi(x.pool) : ''}</td><td>${x.n1 ?? ''}</td></tr>`
       : `<tr><td>${x.issue}</td><td>${x.date.slice(5)}</td><td><b>${x.a.join(' ')}</b></td><td>${sum(x.a)}</td></tr>`).join('');
     $('#main').innerHTML = hero(g, last) + `
-      <section class="card"><h2>今日参考号码 <small>${todayCN()}</small></h2>
-        ${picks.filter(Boolean).map(p => fmtPick(g, p, g.type === 'lotto' ? modeName[p.mode] : kindName[p.kind] + ' · 和值 ' + p.sum)).join('')}
+      <section class="card"><h2>下期参考号码 <small>${pend ? '已于 ' + pend.made + ' 存档，开奖后自动对比' : '本地生成'}</small></h2>
+        ${picks.filter(Boolean).map(p => fmtPick(g, p, g.type === 'lotto' ? modeName[p.mode] : kindName[p.kind] + ' · 和值 ' + sum(p.a))).join('')}
         <button id="again">再机选 5 注</button><div id="more"></div><p class="note">${rule}这些规则不会提高中奖概率。</p></section>
+      ${predCard(g, pred)}
       <section class="card"><h2>号码统计 ${seg()}</h2>${g.since ? `<div class="note">七星彩 2020 年 10 月改为新规则，只统计 ${g.since} 期以后。</div>` : ''}${stats}</section>
       <section class="card"><h2>最近 20 期 <a class="dl" href="data/${g.id}.csv" download>下载全部 ${all.length} 期 CSV</a></h2>
         <table><tr>${g.type === 'lotto' ? '<th>期号</th><th>号码</th><th>奖池</th><th>一等</th>' : '<th>期号</th><th>日期</th><th>号码</th><th>和值</th>'}</tr>${recent}</table></section>`;
@@ -195,7 +218,11 @@
 
   async function load() {
     try {
-      if (!cache[gid]) { $('#main').innerHTML = '<p class="card">加载开奖数据…</p>'; cache[gid] = await fetch(`data/${gid}.json?t=${Math.floor(Date.now() / 36e5)}`).then(r => r.json()); }
+      const t = Math.floor(Date.now() / 36e5);
+      if (!cache[gid]) {
+        $('#main').innerHTML = '<p class="card">加载开奖数据…</p>';
+        [cache[gid], predCache[gid]] = await Promise.all([fetch(`data/${gid}.json?t=${t}`).then(r => r.json()), fetch(`data/pred-${gid}.json?t=${t}`).then(r => r.ok ? r.json() : null).catch(() => null)]);
+      }
       render();
     } catch (e) { $('#main').innerHTML = '<p class="card">数据加载失败：' + e + '</p>'; }
   }
